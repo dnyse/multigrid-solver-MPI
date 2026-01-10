@@ -1,5 +1,5 @@
 # Supported: GCC, CLANG, ICX
-TAG ?= ICX
+TAG ?= CLANG
 ENABLE_MPI ?= true
 ENABLE_OPENMP ?= false
 # Supported: rb, mg

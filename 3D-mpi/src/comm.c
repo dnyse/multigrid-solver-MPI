@@ -4,7 +4,7 @@
  * Use of this source code is governed by a MIT style
  * license that can be found in the LICENSE file.
  */
-#define _MPI
+// #define _MPI
 #if defined(_MPI)
 #include <mpi.h>
 #endif

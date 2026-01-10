@@ -66,8 +66,8 @@ int main(int argc, char **argv) {
     nt++;
 
 #ifdef VERBOSE
-    if (commIsMaster(&s.comm)) {
-      printf("TIME %f , TIMESTEP %f\n", t, s.dt);
+    if (commIsMaster(&d.comm)) {
+      printf("TIME %f , TIMESTEP %f\n", t, d.dt);
     }
 #else
     printProgress(t);
