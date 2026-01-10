@@ -8,19 +8,19 @@
 #define __PARAMETER_H_
 
 typedef struct {
-    int imax, jmax, kmax;
-    double xlength, ylength, zlength;
-    int itermax;
-    double eps, omg;
-    double re, tau, gamma;
-    double te, dt;
-    double gx, gy, gz;
-    char* name;
-    int bcLeft, bcRight, bcBottom, bcTop, bcFront, bcBack;
-    double u_init, v_init, w_init, p_init;
+  int imax, jmax, kmax;
+  double xlength, ylength, zlength;
+  int itermax, levels, presmooth, postsmooth;
+  double eps, omg;
+  double re, tau, gamma;
+  double te, dt;
+  double gx, gy, gz;
+  char *name;
+  int bcLeft, bcRight, bcBottom, bcTop, bcFront, bcBack;
+  double u_init, v_init, w_init, p_init;
 } Parameter;
 
-void initParameter(Parameter*);
-void readParameter(Parameter*, const char*);
-void printParameter(Parameter*);
+void initParameter(Parameter *);
+void readParameter(Parameter *, const char *);
+void printParameter(Parameter *);
 #endif

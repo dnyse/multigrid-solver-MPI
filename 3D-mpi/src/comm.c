@@ -4,7 +4,7 @@
  * Use of this source code is governed by a MIT style
  * license that can be found in the LICENSE file.
  */
-
+#define _MPI
 #if defined(_MPI)
 #include <mpi.h>
 #endif
@@ -436,8 +436,8 @@ void commPartition(Comm *c, int kmax, int jmax, int imax) {
   // c->kmaxLocal = sizeOfRank(c->rank, dims[KCORD], kmax);
 
 	c->imaxLocal = sizeOfRank(c->coords[ICORD], dims[ICORD], imax);
-  c->jmaxLocal = sizeOfRank(c->rank[JCORD], dims[JCORD], jmax);
-  c->kmaxLocal = sizeOfRank(c->rank[KCORD], dims[KCORD], kmax);
+  c->jmaxLocal = sizeOfRank(c->coords[JCORD], dims[JCORD], jmax);
+  c->kmaxLocal = sizeOfRank(c->coords[KCORD], dims[KCORD], kmax);
 
 
   // setup buffer types for communication
