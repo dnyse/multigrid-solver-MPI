@@ -9,6 +9,8 @@
 #include "parameter.h"
 #include "solver.h"
 #include <float.h>
+#include <math.h>
+#include <stdio.h>
 
 #define P(i, j, k)                                                             \
   p[(k) * (imaxLocal + 2) * (jmaxLocal + 2) + (j) * (imaxLocal + 2) + (i)]
@@ -23,7 +25,7 @@ void initSolver(Solver *s, Discretization *d, Parameter *p) {
   s->omega = p->omg;
   s->itermax = p->itermax;
 #ifdef VERBOSE
-  printConfig(d);
+  commPrintConfig(&(d->comm));
 #endif /* VERBOSE */
 }
 

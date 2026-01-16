@@ -262,9 +262,20 @@ void commCollectResult(Comm *c, double *ug, double *vg, double *wg, double *pg,
     for (int i = 0; i < c->size; i++) {
       int coords[NCORDS];
       MPI_Cart_coords(c->comm, i, NDIMS, coords);
-      offset[i * NDIMS + IDIM] = sum(imaxLocalAll, coords[ICORD]);
-      offset[i * NDIMS + JDIM] = sum(jmaxLocalAll, coords[JCORD]);
-      offset[i * NDIMS + KDIM] = sum(kmaxLocalAll, coords[KCORD]);
+      // Compute offsets based on coordinates, not by summing gathered array
+      int iOffset = 0, jOffset = 0, kOffset = 0;
+      for (int ic = 0; ic < coords[ICORD]; ic++) {
+        iOffset += sizeOfRank(ic, c->dims[ICORD], imax);
+      }
+      for (int jc = 0; jc < coords[JCORD]; jc++) {
+        jOffset += sizeOfRank(jc, c->dims[JCORD], jmax);
+      }
+      for (int kc = 0; kc < coords[KCORD]; kc++) {
+        kOffset += sizeOfRank(kc, c->dims[KCORD], kmax);
+      }
+      offset[i * NDIMS + IDIM] = iOffset;
+      offset[i * NDIMS + JDIM] = jOffset;
+      offset[i * NDIMS + KDIM] = kOffset;
       printf("Rank: %d, Coords(k,j,i): %d %d %d, Size(k,j,i): %d %d %d, "
              "Offset(k,j,i): %d %d %d\n",
              i, coords[KCORD], coords[JCORD], coords[ICORD], kmaxLocalAll[i],

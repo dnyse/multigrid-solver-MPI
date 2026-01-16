@@ -1,5 +1,5 @@
 # Supported: GCC, CLANG, ICX
-TAG ?= CLANG
+TAG ?= ICX
 ENABLE_OPENMP ?= false
 # Supported: rb, mg
 SOLVER ?= mg
