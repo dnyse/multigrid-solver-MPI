@@ -75,8 +75,8 @@ static void restrictMG(Solver *s, int level, int imaxLocal, int jmaxLocal,
 
 static void prolongate(Solver *s, int level, int imaxLocal, int jmaxLocal,
                        int kmaxLocal) {
-  double *old = s->r[level + 1];
-  double *e = s->r[level];
+  double *old = s->e[level + 1];
+  double *e = s->e[level];
 
   for (int k = 2; k < kmaxLocal + 1; k++) {
     for (int j = 2; j < jmaxLocal + 1; j++) {

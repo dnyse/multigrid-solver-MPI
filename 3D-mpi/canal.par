@@ -38,7 +38,7 @@ kmax          50	   # number of interior cells in z-direction
 # Time Data:
 # ---------
 
-te       40.0   # final time
+te       60.0   # final time
 dt       0.02    # time stepsize
 tau      0.5     # safety factor for time stepsize control (<0 constant delt)
 
