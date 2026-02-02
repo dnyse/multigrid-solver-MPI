@@ -144,7 +144,7 @@ void computeRHS(Discretization* d)
     double* g   = d->g;
     double* h   = d->h;
 
-    commShift(&d->comm, f, g, h);
+    commShift(&d->comm, f, g, h, 0);
 
     for (int k = 1; k < kmaxLocal + 1; k++) {
         for (int j = 1; j < jmaxLocal + 1; j++) {

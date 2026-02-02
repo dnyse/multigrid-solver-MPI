@@ -24,12 +24,16 @@ void initSolver(Solver *s, Discretization *d, Parameter *p) {
   s->eps = p->eps;
   s->omega = p->omg;
   s->itermax = p->itermax;
+  
+  // Initialize MPI communication types (only need level 0 for RB solver)
+  commSetupMG(s->comm, 1);
+  
 #ifdef VERBOSE
   commPrintConfig(&(d->comm));
 #endif /* VERBOSE */
 }
 
-void solve(Solver *s, double *p, double *rhs) {
+double solve(Solver *s, double *p, double *rhs) {
   int imaxLocal = s->comm->imaxLocal;
   int jmaxLocal = s->comm->jmaxLocal;
   int kmaxLocal = s->comm->kmaxLocal;
@@ -55,6 +59,7 @@ void solve(Solver *s, double *p, double *rhs) {
   int pass, ksw, jsw, isw;
 
   while ((res >= epssq) && (it < itermax)) {
+    res = 0.0;
     ksw = 1;
 
     for (pass = 0; pass < 2; pass++) {
@@ -142,8 +147,9 @@ void solve(Solver *s, double *p, double *rhs) {
   }
 
 #ifdef VERBOSE
-  if (commIsMaster(s->comm)) {
-    printf("Solver took %d iterations to reach %f\n", it, sqrt(res));
-  }
+  // if (commIsMaster(s->comm)) {
+    // printf("Solver took %d iterations to reach %f\n", it, sqrt(res));
+  // }
 #endif
+  return res;
 }

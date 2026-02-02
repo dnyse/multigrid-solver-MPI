@@ -18,6 +18,7 @@
 #include "solver.h"
 #include "timing.h"
 #include "vtkWriter.h"
+#include <math.h>
 
 int main(int argc, char **argv) {
   double timeStart, timeStop;
@@ -40,45 +41,55 @@ int main(int argc, char **argv) {
   initDiscretization(&d, &p);
   initSolver(&s, &d, &p);
 #ifndef VERBOSE
-  initProgress(d.te);
+  if (commIsMaster(&d.comm)) {
+    initProgress(d.te);
+  }
 #endif
 
   double tau = d.tau;
   double te = d.te;
   double t = 0.0;
   int nt = 0;
+  double conv = DBL_MAX;
+  double eps2 = p.eps * p.eps;
 
   timeStart = getTimeStamp();
-  while (t <= te) {
+  while (t <= te && conv > eps2) {
     if (tau > 0.0)
       computeTimestep(&d);
     setBoundaryConditions(&d);
     setSpecialBoundaryCondition(&d);
     computeFG(&d);
     computeRHS(&d);
-    // TODO: Check Correctness -> MPI
-    if (nt % 100 == 0)
-      normalizePressure(&d);
+    // if (nt % 10 == 0) {
+      // normalizePressure(&d);
+      // commExchange(&d.comm, d.p);
+    // }
 
-    solve(&s, d.p, d.rhs);
+    conv = solve(&s, d.p, d.rhs);
     adaptUV(&d);
     t += d.dt;
     nt++;
 
 #ifdef VERBOSE
     if (commIsMaster(&d.comm)) {
-      printf("TIME %f , TIMESTEP %f\n", t, d.dt);
+      printf("TIME %f, TIMESTEP %f, Residual %f \n", t, d.dt, sqrt(conv));
     }
 #else
-    printProgress(t);
+    if (commIsMaster(&d.comm)) {
+      printProgress(t);
+    }
 #endif
   }
   timeStop = getTimeStamp();
 #ifndef VERBOSE
-  stopProgress();
+  if (commIsMaster(&d.comm)) {
+    stopProgress();
+  }
 #endif
   if (commIsMaster(&d.comm)) {
-    printf("Solution took %.2fs\n", timeStop - timeStart);
+    printf("Solution took %.2fs in %d iterations.\n", timeStop - timeStart, nt);
+    printf("Final residiuum %.2fs.\n", sqrt(conv));
   }
 
   double *pg, *ug, *vg, *wg;

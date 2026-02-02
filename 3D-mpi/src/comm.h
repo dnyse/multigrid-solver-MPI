@@ -17,45 +17,48 @@
  * All derived Subarray types are in C ordering
  * with indices KDIM (0), JDIM(1) and IDIM(2)
  * */
-typedef enum direction { LEFT = 0, RIGHT, BOTTOM, TOP, FRONT, BACK, NDIRS } Direction;
+typedef enum direction {
+  LEFT = 0,
+  RIGHT,
+  BOTTOM,
+  TOP,
+  FRONT,
+  BACK,
+  NDIRS
+} Direction;
 typedef enum coordinates { ICORD = 0, JCORD, KCORD, NCORDS } Coordinates;
 typedef enum dimension { KDIM = 0, JDIM, IDIM, NDIMS } Dimension;
 enum layer { HALO = 0, BULK };
 enum op { MAX = 0, SUM };
 
 typedef struct {
-    int rank;
-    int size;
+  int rank;
+  int size;
 #if defined(_MPI)
-    MPI_Comm comm;
-    MPI_Datatype sbufferTypes[NDIRS];
-    MPI_Datatype rbufferTypes[NDIRS];
+  MPI_Comm comm;
+  // per-level types for multigrid
+  MPI_Datatype (*sbufferTypes)[NDIRS]; // [levels][NDIRS]
+  MPI_Datatype (*rbufferTypes)[NDIRS]; // [levels][NDIRS]
+  int mgLevels;                        // to know how many to free
 #endif
-    int neighbours[NDIRS];
-    int coords[NDIMS], dims[NDIMS];
-    int imaxLocal, jmaxLocal, kmaxLocal;
+  int neighbours[NDIRS];
+  int coords[NDIMS], dims[NDIMS];
+  int imaxLocal, jmaxLocal, kmaxLocal;
 } Comm;
 
-extern void commInit(Comm* c, int argc, char** argv);
-extern void commPartition(Comm* c, int kmax, int jmax, int imax);
-extern void commFinalize(Comm* comm);
-extern void commPrintConfig(Comm*);
-extern void commExchange(Comm*, double*);
-extern void commShift(Comm* c, double* f, double* g, double* h);
-extern void commReduction(double* v, int op);
-extern int commIsBoundary(Comm* c, Direction direction);
-extern void commCollectResult(Comm* c,
-    double* ug,
-    double* vg,
-    double* wg,
-    double* pg,
-    double* u,
-    double* v,
-    double* w,
-    double* p,
-    int kmax,
-    int jmax,
-    int imax);
+extern void commInit(Comm *c, int argc, char **argv);
+extern void commPartition(Comm *c, int kmax, int jmax, int imax);
+extern void commFinalize(Comm *comm);
+extern void commPrintConfig(Comm *);
+extern void commExchange(Comm *, double *);
+extern void commShift(Comm *c, double *f, double *g, double *h, int level);
+extern void commReduction(double *v, int op);
+extern int commIsBoundary(Comm *c, Direction direction);
+extern void commCollectResult(Comm *c, double *ug, double *vg, double *wg,
+                              double *pg, double *u, double *v, double *w,
+                              double *p, int kmax, int jmax, int imax);
 
-static inline int commIsMaster(Comm* c) { return c->rank == 0; }
+static inline int commIsMaster(Comm *c) { return c->rank == 0; }
+extern void commSetupMG(Comm *c, int levels);
+extern void commExchangeLevel(Comm *c, double *grid, int level);
 #endif // __COMM_H_

@@ -28,5 +28,5 @@ typedef struct {
 } Solver;
 
 extern void initSolver(Solver *, Discretization *, Parameter *);
-extern void solve(Solver *, double *, double *);
+extern double solve(Solver *, double *, double *);
 #endif

@@ -25,8 +25,8 @@ static void setupCommunication(Comm *c, Direction direction, int layer) {
   int imaxLocal = c->imaxLocal;
   int jmaxLocal = c->jmaxLocal;
   int kmaxLocal = c->kmaxLocal;
+  c->mgLevels = 1;
 
-  size_t dblsize = sizeof(double);
   int sizes[NDIMS];
   int subSizes[NDIMS];
   int starts[NDIMS];
@@ -96,12 +96,12 @@ static void setupCommunication(Comm *c, Direction direction, int layer) {
 
   if (layer == HALO) {
     MPI_Type_create_subarray(NDIMS, sizes, subSizes, starts, MPI_ORDER_C,
-                             MPI_DOUBLE, &c->rbufferTypes[direction]);
-    MPI_Type_commit(&c->rbufferTypes[direction]);
+                             MPI_DOUBLE, &c->rbufferTypes[0][direction]);
+    MPI_Type_commit(&c->rbufferTypes[0][direction]);
   } else if (layer == BULK) {
     MPI_Type_create_subarray(NDIMS, sizes, subSizes, starts, MPI_ORDER_C,
-                             MPI_DOUBLE, &c->sbufferTypes[direction]);
-    MPI_Type_commit(&c->sbufferTypes[direction]);
+                             MPI_DOUBLE, &c->sbufferTypes[0][direction]);
+    MPI_Type_commit(&c->sbufferTypes[0][direction]);
   }
 }
 
@@ -190,15 +190,10 @@ int commIsBoundary(Comm *c, Direction direction) {
 }
 
 void commExchange(Comm *c, double *grid) {
-#if defined(_MPI)
-  int counts[6] = {1, 1, 1, 1, 1, 1};
-  MPI_Aint displs[6] = {0, 0, 0, 0, 0, 0};
-  MPI_Neighbor_alltoallw(grid, counts, displs, c->sbufferTypes, grid, counts,
-                         displs, c->rbufferTypes, c->comm);
-#endif
+  commExchangeLevel(c, grid, 0);
 }
 
-void commShift(Comm *c, double *f, double *g, double *h) {
+void commShift(Comm *c, double *f, double *g, double *h, int level) {
 #if defined(_MPI)
   MPI_Request requests[6] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL,
                              MPI_REQUEST_NULL, MPI_REQUEST_NULL,
@@ -206,29 +201,29 @@ void commShift(Comm *c, double *f, double *g, double *h) {
 
   /* shift G */
   /* receive ghost cells from bottom neighbor */
-  MPI_Irecv(g, 1, c->rbufferTypes[BOTTOM], c->neighbours[BOTTOM], 0, c->comm,
-            &requests[0]);
+  MPI_Irecv(g, 1, c->rbufferTypes[level][BOTTOM], c->neighbours[BOTTOM], 0,
+            c->comm, &requests[0]);
 
   /* send ghost cells to top neighbor */
-  MPI_Isend(g, 1, c->sbufferTypes[TOP], c->neighbours[TOP], 0, c->comm,
+  MPI_Isend(g, 1, c->sbufferTypes[level][TOP], c->neighbours[TOP], 0, c->comm,
             &requests[1]);
 
   /* shift F */
   /* receive ghost cells from left neighbor */
-  MPI_Irecv(f, 1, c->rbufferTypes[LEFT], c->neighbours[LEFT], 1, c->comm,
+  MPI_Irecv(f, 1, c->rbufferTypes[level][LEFT], c->neighbours[LEFT], 1, c->comm,
             &requests[2]);
 
   /* send ghost cells to right neighbor */
-  MPI_Isend(f, 1, c->sbufferTypes[RIGHT], c->neighbours[RIGHT], 1, c->comm,
-            &requests[3]);
+  MPI_Isend(f, 1, c->sbufferTypes[level][RIGHT], c->neighbours[RIGHT], 1,
+            c->comm, &requests[3]);
 
   /* shift H */
   /* receive ghost cells from front neighbor */
-  MPI_Irecv(h, 1, c->rbufferTypes[FRONT], c->neighbours[FRONT], 2, c->comm,
-            &requests[4]);
+  MPI_Irecv(h, 1, c->rbufferTypes[level][FRONT], c->neighbours[FRONT], 2,
+            c->comm, &requests[4]);
 
   /* send ghost cells to back neighbor */
-  MPI_Isend(h, 1, c->sbufferTypes[BACK], c->neighbours[BACK], 2, c->comm,
+  MPI_Isend(h, 1, c->sbufferTypes[level][BACK], c->neighbours[BACK], 2, c->comm,
             &requests[5]);
 
   MPI_Waitall(6, requests, MPI_STATUSES_IGNORE);
@@ -446,25 +441,24 @@ void commPartition(Comm *c, int kmax, int jmax, int imax) {
   // c->jmaxLocal = sizeOfRank(c->rank, dims[JCORD], jmax);
   // c->kmaxLocal = sizeOfRank(c->rank, dims[KCORD], kmax);
 
-	c->imaxLocal = sizeOfRank(c->coords[ICORD], dims[ICORD], imax);
+  c->imaxLocal = sizeOfRank(c->coords[ICORD], dims[ICORD], imax);
   c->jmaxLocal = sizeOfRank(c->coords[JCORD], dims[JCORD], jmax);
   c->kmaxLocal = sizeOfRank(c->coords[KCORD], dims[KCORD], kmax);
 
-
   // setup buffer types for communication
   // call for all other cases
-  setupCommunication(c, LEFT, BULK);
-  setupCommunication(c, LEFT, HALO);
-  setupCommunication(c, RIGHT, BULK);
-  setupCommunication(c, RIGHT, HALO);
-  setupCommunication(c, BOTTOM, BULK);
-  setupCommunication(c, BOTTOM, HALO);
-  setupCommunication(c, TOP, BULK);
-  setupCommunication(c, TOP, HALO);
-  setupCommunication(c, FRONT, BULK);
-  setupCommunication(c, FRONT, HALO);
-  setupCommunication(c, BACK, BULK);
-  setupCommunication(c, BACK, HALO);
+  // setupCommunication(c, LEFT, BULK);
+  // setupCommunication(c, LEFT, HALO);
+  // setupCommunication(c, RIGHT, BULK);
+  // setupCommunication(c, RIGHT, HALO);
+  // setupCommunication(c, BOTTOM, BULK);
+  // setupCommunication(c, BOTTOM, HALO);
+  // setupCommunication(c, TOP, BULK);
+  // setupCommunication(c, TOP, HALO);
+  // setupCommunication(c, FRONT, BULK);
+  // setupCommunication(c, FRONT, HALO);
+  // setupCommunication(c, BACK, BULK);
+  // setupCommunication(c, BACK, HALO);
 
 #else
   c->imaxLocal = imax;
@@ -473,12 +467,119 @@ void commPartition(Comm *c, int kmax, int jmax, int imax) {
 #endif
 }
 
+void commSetup(Comm *c) { commSetupMG(c, 1); }
+void commSetupMG(Comm *c, int levels) {
+#if defined(_MPI)
+  c->mgLevels = levels;
+  c->sbufferTypes = malloc(levels * sizeof(MPI_Datatype[NDIRS]));
+  c->rbufferTypes = malloc(levels * sizeof(MPI_Datatype[NDIRS]));
+
+  int imaxLvl = c->imaxLocal;
+  int jmaxLvl = c->jmaxLocal;
+  int kmaxLvl = c->kmaxLocal;
+  for (int l = 0; l < levels; l++) {
+    for (Direction dir = LEFT; dir < NDIRS; dir++) {
+      for (int layer = HALO; layer <= BULK; layer++) {
+        int sizes[NDIMS];
+        int subSizes[NDIMS];
+        int starts[NDIMS];
+        sizes[IDIM] = imaxLvl + 2;
+        sizes[JDIM] = jmaxLvl + 2;
+        sizes[KDIM] = kmaxLvl + 2;
+
+        int offset = (layer == HALO) ? 1 : 0;
+
+        switch (dir) {
+        case LEFT:
+          subSizes[IDIM] = 1;
+          subSizes[JDIM] = jmaxLvl;
+          subSizes[KDIM] = kmaxLvl;
+          starts[IDIM] = 1 - offset;
+          starts[JDIM] = 1;
+          starts[KDIM] = 1;
+          break;
+        case RIGHT:
+          subSizes[IDIM] = 1;
+          subSizes[JDIM] = jmaxLvl;
+          subSizes[KDIM] = kmaxLvl;
+          starts[IDIM] = imaxLvl + offset;
+          starts[JDIM] = 1;
+          starts[KDIM] = 1;
+          break;
+        case BOTTOM:
+          subSizes[IDIM] = imaxLvl;
+          subSizes[JDIM] = 1;
+          subSizes[KDIM] = kmaxLvl;
+          starts[IDIM] = 1;
+          starts[JDIM] = 1 - offset;
+          starts[KDIM] = 1;
+          break;
+        case TOP:
+          subSizes[IDIM] = imaxLvl;
+          subSizes[JDIM] = 1;
+          subSizes[KDIM] = kmaxLvl;
+          starts[IDIM] = 1;
+          starts[JDIM] = jmaxLvl + offset;
+          starts[KDIM] = 1;
+          break;
+        case FRONT:
+          subSizes[IDIM] = imaxLvl;
+          subSizes[JDIM] = jmaxLvl;
+          subSizes[KDIM] = 1;
+          starts[IDIM] = 1;
+          starts[JDIM] = 1;
+          starts[KDIM] = 1 - offset;
+          break;
+        case BACK:
+          subSizes[IDIM] = imaxLvl;
+          subSizes[JDIM] = jmaxLvl;
+          subSizes[KDIM] = 1;
+          starts[IDIM] = 1;
+          starts[JDIM] = 1;
+          starts[KDIM] = kmaxLvl + offset;
+          break;
+        case NDIRS:
+          break;
+        }
+
+        if (layer == HALO) {
+          MPI_Type_create_subarray(NDIMS, sizes, subSizes, starts, MPI_ORDER_C,
+                                   MPI_DOUBLE, &c->rbufferTypes[l][dir]);
+          MPI_Type_commit(&c->rbufferTypes[l][dir]);
+        } else {
+          MPI_Type_create_subarray(NDIMS, sizes, subSizes, starts, MPI_ORDER_C,
+                                   MPI_DOUBLE, &c->sbufferTypes[l][dir]);
+          MPI_Type_commit(&c->sbufferTypes[l][dir]);
+        }
+      }
+    }
+
+    imaxLvl /= 2;
+    jmaxLvl /= 2;
+    kmaxLvl /= 2;
+  }
+#endif
+}
+void commExchangeLevel(Comm *c, double *grid, int level) {
+#if defined(_MPI)
+  int counts[6] = {1, 1, 1, 1, 1, 1};
+  MPI_Aint displs[6] = {0, 0, 0, 0, 0, 0};
+  MPI_Neighbor_alltoallw(grid, counts, displs, c->sbufferTypes[level], grid,
+                         counts, displs, c->rbufferTypes[level], c->comm);
+#endif
+}
+
 void commFinalize(Comm *c) {
 #if defined(_MPI)
-  for (int i = 0; i < NDIRS; i++) {
-    MPI_Type_free(&c->sbufferTypes[i]);
-    MPI_Type_free(&c->rbufferTypes[i]);
+
+  for (int l = 0; l < c->mgLevels; l++) {
+    for (int d = 0; d < NDIRS; d++) {
+      MPI_Type_free(&c->sbufferTypes[l][d]);
+      MPI_Type_free(&c->rbufferTypes[l][d]);
+    }
   }
+  free(c->sbufferTypes);
+  free(c->rbufferTypes);
 
   MPI_Finalize();
 #endif
