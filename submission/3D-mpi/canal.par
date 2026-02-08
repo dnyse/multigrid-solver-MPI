@@ -1,0 +1,59 @@
+#==============================================================================
+#                            Laminar Canal Flow
+#==============================================================================
+
+# Problem specific Data:
+# ---------------------
+
+name canal             # name of flow setup
+
+bcLeft    3			#  flags for boundary conditions
+bcRight   3			#  1 = no-slip      3 = outflow
+bcBottom  1			#  2 = free-slip    4 = periodic
+bcTop     1			#
+bcFront   1			#
+bcBack    1			#
+
+gx     0.0      # Body forces (e.g. gravity)
+gy     0.0      #
+gz     0.0      #
+
+re            100.0	   # Reynolds number
+
+u_init        1.0      # initial value for velocity in x-direction
+v_init        0.0      # initial value for velocity in y-direction
+w_init        0.0      # initial value for velocity in z-direction
+p_init        0.0      # initial value for pressure
+
+# Geometry Data:
+# -------------
+
+xlength       240.0
+ylength       16.0
+zlength       8.0
+imax          768
+jmax          128
+kmax          64
+
+# Time Data:
+# ---------
+
+te       50.0
+dt       0.02    # time stepsize
+tau      0.5     # safety factor for time stepsize control (<0 constant delt)
+
+# Multigrid data:
+# ---------
+
+levels        4
+presmooth     20        # Pre-smoothning iterations
+postsmooth    5         # Post-smoothning iterations
+
+# Pressure Iteration Data:
+# -----------------------
+
+itermax       500       # maximal number of pressure iteration in one time step
+eps           0.0001   # stopping tolerance for pressure iteration
+omg           1.6       # relaxation parameter for SOR iteration
+gamma         0.9       # upwind differencing factor gamma
+#===============================================================================
